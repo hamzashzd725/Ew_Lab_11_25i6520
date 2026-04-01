@@ -1,0 +1,1040 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>r i c e — Linux Customization Guide</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@300;400;600;800&family=Bebas+Neue&family=DM+Sans:wght@300;400&display=swap" rel="stylesheet" />
+  <style>
+    :root {
+      --bg:        #0a0c10;
+      --bg2:       #0f1218;
+      --surface:   #141820;
+      --border:    #1e2530;
+      --accent:    #7fff72;
+      --accent2:   #72c4ff;
+      --accent3:   #ff72b8;
+      --muted:     #4a5568;
+      --text:      #c9d1d9;
+      --text-dim:  #6e7f96;
+      --glow:      0 0 24px rgba(127,255,114,0.18);
+      --glow2:     0 0 24px rgba(114,196,255,0.18);
+    }
+
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    html { scroll-behavior: smooth; }
+
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: 'DM Sans', sans-serif;
+      font-weight: 300;
+      min-height: 100vh;
+      overflow-x: hidden;
+      cursor: none;
+    }
+
+    /* Custom cursor */
+    .cursor {
+      position: fixed;
+      width: 10px; height: 10px;
+      background: var(--accent);
+      border-radius: 50%;
+      pointer-events: none;
+      z-index: 9999;
+      transform: translate(-50%, -50%);
+      transition: transform 0.05s, width 0.2s, height 0.2s, opacity 0.2s;
+      mix-blend-mode: screen;
+    }
+    .cursor-ring {
+      position: fixed;
+      width: 34px; height: 34px;
+      border: 1px solid rgba(127,255,114,0.4);
+      border-radius: 50%;
+      pointer-events: none;
+      z-index: 9998;
+      transform: translate(-50%, -50%);
+      transition: transform 0.12s ease, width 0.2s, height 0.2s;
+    }
+
+    /* Scanlines overlay */
+    body::before {
+      content: '';
+      position: fixed;
+      inset: 0;
+      background: repeating-linear-gradient(
+        0deg,
+        transparent,
+        transparent 2px,
+        rgba(0,0,0,0.08) 2px,
+        rgba(0,0,0,0.08) 4px
+      );
+      pointer-events: none;
+      z-index: 9990;
+    }
+
+    /* Noise texture */
+    body::after {
+      content: '';
+      position: fixed;
+      inset: 0;
+      background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.04'/%3E%3C/svg%3E");
+      opacity: 0.5;
+      pointer-events: none;
+      z-index: 9989;
+    }
+
+    /* NAV */
+    nav {
+      position: fixed;
+      top: 0; left: 0; right: 0;
+      z-index: 100;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 18px 48px;
+      background: rgba(10,12,16,0.85);
+      backdrop-filter: blur(16px);
+      border-bottom: 1px solid var(--border);
+    }
+    .nav-logo {
+      font-family: 'Bebas Neue', sans-serif;
+      font-size: 1.6rem;
+      letter-spacing: 6px;
+      color: var(--accent);
+      text-shadow: var(--glow);
+    }
+    .nav-links {
+      display: flex;
+      gap: 36px;
+      list-style: none;
+    }
+    .nav-links a {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 0.72rem;
+      color: var(--text-dim);
+      text-decoration: none;
+      letter-spacing: 2px;
+      text-transform: uppercase;
+      transition: color 0.2s;
+    }
+    .nav-links a:hover { color: var(--accent); }
+    .nav-tag {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 0.68rem;
+      color: var(--muted);
+      letter-spacing: 1px;
+    }
+    .nav-tag span { color: var(--accent2); }
+
+    /* HERO */
+    .hero {
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      padding: 120px 48px 80px;
+      position: relative;
+      overflow: hidden;
+    }
+    .hero-grid-bg {
+      position: absolute;
+      inset: 0;
+      background-image:
+        linear-gradient(rgba(30,37,48,0.4) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(30,37,48,0.4) 1px, transparent 1px);
+      background-size: 60px 60px;
+      mask-image: radial-gradient(ellipse 80% 80% at 50% 50%, black 30%, transparent 100%);
+    }
+    .hero-glow {
+      position: absolute;
+      width: 700px; height: 700px;
+      background: radial-gradient(circle, rgba(127,255,114,0.06) 0%, transparent 70%);
+      top: 50%; left: 50%;
+      transform: translate(-50%, -60%);
+      pointer-events: none;
+    }
+    .hero-eyebrow {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 0.75rem;
+      color: var(--accent);
+      letter-spacing: 4px;
+      text-transform: uppercase;
+      margin-bottom: 28px;
+      opacity: 0;
+      animation: fadeUp 0.6s 0.2s ease forwards;
+    }
+    .hero-eyebrow::before { content: '> '; color: var(--accent); }
+    .hero-title {
+      font-family: 'Bebas Neue', sans-serif;
+      font-size: clamp(5rem, 12vw, 11rem);
+      line-height: 0.92;
+      letter-spacing: 4px;
+      margin-bottom: 32px;
+      opacity: 0;
+      animation: fadeUp 0.7s 0.35s ease forwards;
+    }
+    .hero-title .line2 { color: var(--accent); text-shadow: var(--glow); }
+    .hero-title .line3 { color: var(--text-dim); font-size: 0.45em; letter-spacing: 16px; }
+    .hero-desc {
+      max-width: 520px;
+      font-size: 1rem;
+      line-height: 1.8;
+      color: var(--text-dim);
+      margin-bottom: 48px;
+      opacity: 0;
+      animation: fadeUp 0.7s 0.5s ease forwards;
+    }
+    .hero-actions {
+      display: flex;
+      gap: 20px;
+      flex-wrap: wrap;
+      opacity: 0;
+      animation: fadeUp 0.7s 0.65s ease forwards;
+    }
+    .btn-primary {
+      display: inline-flex;
+      align-items: center;
+      gap: 10px;
+      background: var(--accent);
+      color: #0a0c10;
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 0.8rem;
+      font-weight: 600;
+      letter-spacing: 2px;
+      text-transform: uppercase;
+      padding: 14px 32px;
+      text-decoration: none;
+      transition: all 0.2s;
+      position: relative;
+      overflow: hidden;
+    }
+    .btn-primary::after {
+      content: '';
+      position: absolute;
+      inset: 0;
+      background: rgba(255,255,255,0.15);
+      transform: translateX(-100%);
+      transition: transform 0.3s;
+    }
+    .btn-primary:hover::after { transform: translateX(0); }
+    .btn-secondary {
+      display: inline-flex;
+      align-items: center;
+      gap: 10px;
+      border: 1px solid var(--border);
+      color: var(--text-dim);
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 0.8rem;
+      letter-spacing: 2px;
+      text-transform: uppercase;
+      padding: 14px 32px;
+      text-decoration: none;
+      transition: all 0.2s;
+    }
+    .btn-secondary:hover { border-color: var(--accent2); color: var(--accent2); }
+
+    /* TERMINAL WINDOW */
+    .terminal-float {
+      position: absolute;
+      right: 48px;
+      top: 50%;
+      transform: translateY(-50%);
+      width: 420px;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      box-shadow: 0 32px 80px rgba(0,0,0,0.6), var(--glow);
+      opacity: 0;
+      animation: fadeLeft 0.8s 0.8s ease forwards;
+    }
+    .terminal-bar {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 12px 16px;
+      border-bottom: 1px solid var(--border);
+      background: var(--bg2);
+    }
+    .dot { width: 12px; height: 12px; border-radius: 50%; }
+    .dot.r { background: #ff5f57; }
+    .dot.y { background: #febc2e; }
+    .dot.g { background: #28c840; }
+    .terminal-title {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 0.7rem;
+      color: var(--muted);
+      margin-left: 8px;
+    }
+    .terminal-body {
+      padding: 20px;
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 0.78rem;
+      line-height: 2;
+    }
+    .t-prompt { color: var(--accent); }
+    .t-cmd { color: var(--text); }
+    .t-comment { color: var(--muted); }
+    .t-output { color: var(--accent2); }
+    .t-warn { color: var(--accent3); }
+    .t-cursor {
+      display: inline-block;
+      width: 8px;
+      height: 1.1em;
+      background: var(--accent);
+      vertical-align: middle;
+      animation: blink 1s step-end infinite;
+    }
+
+    /* SECTION BASE */
+    section { padding: 100px 48px; }
+    .section-label {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 0.68rem;
+      letter-spacing: 4px;
+      text-transform: uppercase;
+      color: var(--accent);
+      margin-bottom: 16px;
+    }
+    .section-title {
+      font-family: 'Bebas Neue', sans-serif;
+      font-size: clamp(2.5rem, 5vw, 4.5rem);
+      letter-spacing: 3px;
+      line-height: 1;
+      margin-bottom: 20px;
+    }
+    .section-sub {
+      font-size: 0.95rem;
+      color: var(--text-dim);
+      max-width: 560px;
+      line-height: 1.8;
+      margin-bottom: 60px;
+    }
+
+    /* DIVIDER */
+    .divider {
+      height: 1px;
+      background: linear-gradient(90deg, transparent, var(--border), transparent);
+      margin: 0 48px;
+    }
+
+    /* STEPS */
+    #guide { background: var(--bg2); }
+    .steps {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+      gap: 2px;
+    }
+    .step-card {
+      background: var(--surface);
+      padding: 40px 36px;
+      border: 1px solid var(--border);
+      position: relative;
+      transition: border-color 0.3s, transform 0.3s;
+      overflow: hidden;
+    }
+    .step-card::before {
+      content: '';
+      position: absolute;
+      top: 0; left: 0; right: 0;
+      height: 2px;
+      background: var(--accent);
+      transform: scaleX(0);
+      transform-origin: left;
+      transition: transform 0.4s;
+    }
+    .step-card:hover { border-color: rgba(127,255,114,0.2); transform: translateY(-4px); }
+    .step-card:hover::before { transform: scaleX(1); }
+    .step-num {
+      font-family: 'Bebas Neue', sans-serif;
+      font-size: 4rem;
+      color: var(--border);
+      line-height: 1;
+      margin-bottom: 16px;
+      transition: color 0.3s;
+    }
+    .step-card:hover .step-num { color: rgba(127,255,114,0.15); }
+    .step-name {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 0.9rem;
+      font-weight: 600;
+      color: var(--accent);
+      letter-spacing: 2px;
+      text-transform: uppercase;
+      margin-bottom: 12px;
+    }
+    .step-desc {
+      font-size: 0.9rem;
+      color: var(--text-dim);
+      line-height: 1.7;
+      margin-bottom: 20px;
+    }
+    .step-tags {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+    }
+    .tag {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 0.65rem;
+      padding: 4px 10px;
+      border: 1px solid var(--border);
+      color: var(--muted);
+      letter-spacing: 1px;
+      text-transform: uppercase;
+      transition: all 0.2s;
+    }
+    .tag:hover { border-color: var(--accent2); color: var(--accent2); }
+
+    /* TOOLS TABLE */
+    #tools { background: var(--bg); }
+    .tools-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 1px;
+      background: var(--border);
+      border: 1px solid var(--border);
+    }
+    .tool-cell {
+      background: var(--bg);
+      padding: 28px 30px;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      transition: background 0.25s;
+      cursor: default;
+    }
+    .tool-cell:hover { background: var(--surface); }
+    .tool-category {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 0.6rem;
+      letter-spacing: 3px;
+      text-transform: uppercase;
+      color: var(--muted);
+    }
+    .tool-name {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 1rem;
+      font-weight: 600;
+      color: var(--accent2);
+    }
+    .tool-desc {
+      font-size: 0.82rem;
+      color: var(--text-dim);
+      line-height: 1.6;
+    }
+
+    /* CODE BLOCK */
+    #configs { background: var(--bg2); }
+    .config-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 24px;
+    }
+    .code-block {
+      background: var(--bg);
+      border: 1px solid var(--border);
+      overflow: hidden;
+      transition: border-color 0.3s;
+    }
+    .code-block:hover { border-color: rgba(127,255,114,0.25); }
+    .code-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 12px 20px;
+      border-bottom: 1px solid var(--border);
+      background: var(--surface);
+    }
+    .code-filename {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 0.72rem;
+      color: var(--accent);
+    }
+    .code-lang {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 0.6rem;
+      color: var(--muted);
+      letter-spacing: 2px;
+      text-transform: uppercase;
+    }
+    .code-body {
+      padding: 24px;
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 0.75rem;
+      line-height: 2;
+      color: var(--text-dim);
+      overflow-x: auto;
+    }
+    .code-body .kw { color: var(--accent3); }
+    .code-body .val { color: var(--accent2); }
+    .code-body .str { color: var(--accent); }
+    .code-body .cmt { color: var(--muted); font-style: italic; }
+    .code-body .sym { color: var(--text); }
+
+    /* RESOURCES */
+    #resources { background: var(--bg); }
+    .resource-list {
+      display: flex;
+      flex-direction: column;
+      gap: 2px;
+    }
+    .resource-item {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 22px 28px;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      text-decoration: none;
+      transition: all 0.25s;
+      group: true;
+    }
+    .resource-item:hover {
+      border-color: rgba(127,255,114,0.3);
+      background: #161c24;
+      transform: translateX(6px);
+    }
+    .resource-left { display: flex; align-items: center; gap: 24px; }
+    .resource-icon {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 0.7rem;
+      color: var(--accent);
+      width: 32px;
+    }
+    .resource-name {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 0.88rem;
+      color: var(--text);
+      font-weight: 600;
+    }
+    .resource-url {
+      font-size: 0.78rem;
+      color: var(--muted);
+    }
+    .resource-arrow {
+      color: var(--muted);
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 0.8rem;
+      transition: color 0.2s, transform 0.2s;
+    }
+    .resource-item:hover .resource-arrow { color: var(--accent); transform: translateX(4px); }
+
+    /* FOOTER */
+    footer {
+      padding: 60px 48px;
+      border-top: 1px solid var(--border);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+    .footer-logo {
+      font-family: 'Bebas Neue', sans-serif;
+      font-size: 1.4rem;
+      letter-spacing: 6px;
+      color: var(--muted);
+    }
+    .footer-copy {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 0.65rem;
+      color: var(--muted);
+      letter-spacing: 2px;
+    }
+    .footer-copy span { color: var(--accent); }
+
+    /* SCROLL REVEAL */
+    .reveal {
+      opacity: 0;
+      transform: translateY(30px);
+      transition: opacity 0.7s ease, transform 0.7s ease;
+    }
+    .reveal.visible { opacity: 1; transform: none; }
+
+    /* ANIMATIONS */
+    @keyframes fadeUp {
+      from { opacity: 0; transform: translateY(24px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+    @keyframes fadeLeft {
+      from { opacity: 0; transform: translate(30px, -50%); }
+      to   { opacity: 1; transform: translate(0, -50%); }
+    }
+    @keyframes blink {
+      50% { opacity: 0; }
+    }
+    @keyframes typing {
+      from { width: 0; }
+    }
+
+    /* RESPONSIVE */
+    @media (max-width: 900px) {
+      nav { padding: 16px 24px; }
+      .nav-links { display: none; }
+      .hero { padding: 100px 24px 60px; }
+      .terminal-float { display: none; }
+      section { padding: 70px 24px; }
+      .divider { margin: 0 24px; }
+      .tools-grid { grid-template-columns: 1fr 1fr; }
+      .config-grid { grid-template-columns: 1fr; }
+      footer { padding: 40px 24px; flex-direction: column; gap: 16px; text-align: center; }
+    }
+    @media (max-width: 600px) {
+      .tools-grid { grid-template-columns: 1fr; }
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Cursor -->
+  <div class="cursor" id="cursor"></div>
+  <div class="cursor-ring" id="cursorRing"></div>
+
+  <!-- NAV -->
+  <nav>
+    <div class="nav-logo">RICE</div>
+    <ul class="nav-links">
+      <li><a href="#guide">Guide</a></li>
+      <li><a href="#tools">Tools</a></li>
+      <li><a href="#configs">Configs</a></li>
+      <li><a href="#resources">Resources</a></li>
+    </ul>
+    <div class="nav-tag">user<span>@arch</span>:~$</div>
+  </nav>
+
+  <!-- HERO -->
+  <section class="hero" id="home">
+    <div class="hero-grid-bg"></div>
+    <div class="hero-glow"></div>
+
+    <div class="hero-eyebrow">linux customization guide</div>
+    <h1 class="hero-title">
+      MAKE<br/>
+      <span class="line2">YOUR</span><br/>
+      DESKTOP<br/>
+      <span class="line3">YOURS</span>
+    </h1>
+    <p class="hero-desc">
+      A complete, no-nonsense guide to ricing your Linux desktop — 
+      from window managers to dotfiles. Build a setup that's fast, minimal, 
+      and unmistakably yours.
+    </p>
+    <div class="hero-actions">
+      <a href="#guide" class="btn-primary">▶ Start Ricing</a>
+      <a href="#resources" class="btn-secondary">◈ Resources</a>
+    </div>
+
+    <!-- Terminal window -->
+    <div class="terminal-float">
+      <div class="terminal-bar">
+        <span class="dot r"></span>
+        <span class="dot y"></span>
+        <span class="dot g"></span>
+        <span class="terminal-title">user@arch — ~/dotfiles — zsh</span>
+      </div>
+      <div class="terminal-body">
+        <div><span class="t-prompt">❯</span> <span class="t-cmd">neofetch</span></div>
+        <div class="t-output">OS: Arch Linux x86_64</div>
+        <div class="t-output">WM: bspwm</div>
+        <div class="t-output">Shell: zsh 5.9</div>
+        <div class="t-output">Terminal: kitty</div>
+        <div class="t-output">Theme: Catppuccin Mocha</div>
+        <div class="t-output">Font: JetBrains Mono 11</div>
+        <div>&nbsp;</div>
+        <div><span class="t-prompt">❯</span> <span class="t-cmd">stow .</span></div>
+        <div class="t-output">Linking dotfiles... done</div>
+        <div>&nbsp;</div>
+        <div><span class="t-prompt">❯</span> <span class="t-cmd">cat .config/bspwm/bspwmrc</span></div>
+        <div class="t-warn">bspc monitor -d I II III IV V</div>
+        <div class="t-warn">bspc config border_width 2</div>
+        <div><span class="t-prompt">❯</span> <span class="t-cursor"></span></div>
+      </div>
+    </div>
+  </section>
+
+  <div class="divider"></div>
+
+  <!-- GUIDE STEPS -->
+  <section id="guide">
+    <div class="section-label">// 01 — the guide</div>
+    <h2 class="section-title reveal">RICING<br/>FUNDAMENTALS</h2>
+    <p class="section-sub reveal">Follow these steps to transform a vanilla Linux install into a personalized, refined setup. No shortcuts, no prebuilt themes — do it yourself.</p>
+
+    <div class="steps">
+      <div class="step-card reveal">
+        <div class="step-num">01</div>
+        <div class="step-name">Choose a Distro</div>
+        <p class="step-desc">Start with a distro that gets out of your way. Arch gives you a blank canvas. NixOS gives you reproducibility. Pick your poison.</p>
+        <div class="step-tags">
+          <span class="tag">Arch</span>
+          <span class="tag">NixOS</span>
+          <span class="tag">Gentoo</span>
+          <span class="tag">Void</span>
+        </div>
+      </div>
+      <div class="step-card reveal">
+        <div class="step-num">02</div>
+        <div class="step-name">Pick a Window Manager</div>
+        <p class="step-desc">Ditch the DE. A tiling WM like bspwm, i3, or Hyprland gives you full keyboard-driven control and a blank slate for aesthetics.</p>
+        <div class="step-tags">
+          <span class="tag">bspwm</span>
+          <span class="tag">i3</span>
+          <span class="tag">Hyprland</span>
+          <span class="tag">dwm</span>
+        </div>
+      </div>
+      <div class="step-card reveal">
+        <div class="step-num">03</div>
+        <div class="step-name">Configure Your Terminal</div>
+        <p class="step-desc">Your terminal is your primary interface. Choose a fast emulator (kitty, Alacritty), configure zsh with plugins, and pick a colorscheme.</p>
+        <div class="step-tags">
+          <span class="tag">kitty</span>
+          <span class="tag">Alacritty</span>
+          <span class="tag">zsh</span>
+          <span class="tag">tmux</span>
+        </div>
+      </div>
+      <div class="step-card reveal">
+        <div class="step-num">04</div>
+        <div class="step-name">Set a Colorscheme</div>
+        <p class="step-desc">A consistent palette ties your entire setup together. Apply it across your WM borders, terminal, bar, nvim, rofi, and GTK apps.</p>
+        <div class="step-tags">
+          <span class="tag">Catppuccin</span>
+          <span class="tag">Gruvbox</span>
+          <span class="tag">Dracula</span>
+          <span class="tag">Nord</span>
+        </div>
+      </div>
+      <div class="step-card reveal">
+        <div class="step-num">05</div>
+        <div class="step-name">Build a Status Bar</div>
+        <p class="step-desc">Polybar, Waybar, or eww for a fully custom bar. Show workspaces, system stats, time, and whatever modules matter to you.</p>
+        <div class="step-tags">
+          <span class="tag">Polybar</span>
+          <span class="tag">Waybar</span>
+          <span class="tag">eww</span>
+        </div>
+      </div>
+      <div class="step-card reveal">
+        <div class="step-num">06</div>
+        <div class="step-name">Version Your Dotfiles</div>
+        <p class="step-desc">Track everything with Git. Use GNU Stow to symlink your config files. Push to GitHub so your setup is reproducible anywhere.</p>
+        <div class="step-tags">
+          <span class="tag">git</span>
+          <span class="tag">stow</span>
+          <span class="tag">chezmoi</span>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <div class="divider"></div>
+
+  <!-- TOOLS -->
+  <section id="tools">
+    <div class="section-label">// 02 — toolbox</div>
+    <h2 class="section-title reveal">ESSENTIAL<br/>TOOLS</h2>
+    <p class="section-sub reveal">Curated list of tools used by the ricing community. Mix and match — there's no single right setup.</p>
+
+    <div class="tools-grid reveal">
+      <div class="tool-cell">
+        <span class="tool-category">Compositor</span>
+        <span class="tool-name">picom</span>
+        <span class="tool-desc">X11 compositor for transparency, shadows, blur, and animation effects.</span>
+      </div>
+      <div class="tool-cell">
+        <span class="tool-category">Compositor (Wayland)</span>
+        <span class="tool-name">Hyprland</span>
+        <span class="tool-desc">Dynamic tiling Wayland compositor with buttery animations and extensive config.</span>
+      </div>
+      <div class="tool-cell">
+        <span class="tool-category">App Launcher</span>
+        <span class="tool-name">rofi</span>
+        <span class="tool-desc">Highly customizable window switcher and application launcher.</span>
+      </div>
+      <div class="tool-cell">
+        <span class="tool-category">Notifications</span>
+        <span class="tool-name">dunst</span>
+        <span class="tool-desc">Lightweight, customizable notification daemon with full theme support.</span>
+      </div>
+      <div class="tool-cell">
+        <span class="tool-category">Wallpaper</span>
+        <span class="tool-name">feh / swww</span>
+        <span class="tool-desc">feh for X11, swww for Wayland — set and rotate wallpapers with transitions.</span>
+      </div>
+      <div class="tool-cell">
+        <span class="tool-category">Fetch</span>
+        <span class="tool-name">fastfetch</span>
+        <span class="tool-desc">Blazing-fast system info display. neofetch successor, fully configurable.</span>
+      </div>
+      <div class="tool-cell">
+        <span class="tool-category">File Manager</span>
+        <span class="tool-name">lf / yazi</span>
+        <span class="tool-desc">Terminal-based file managers with vim keybindings and image preview.</span>
+      </div>
+      <div class="tool-cell">
+        <span class="tool-category">Editor</span>
+        <span class="tool-name">Neovim</span>
+        <span class="tool-desc">Extensible modal editor. Theming with lazy.nvim and colorscheme plugins.</span>
+      </div>
+      <div class="tool-cell">
+        <span class="tool-category">Shell Prompt</span>
+        <span class="tool-name">starship</span>
+        <span class="tool-desc">Cross-shell prompt written in Rust. Minimal, informative, and fast.</span>
+      </div>
+    </div>
+  </section>
+
+  <div class="divider"></div>
+
+  <!-- CONFIGS -->
+  <section id="configs">
+    <div class="section-label">// 03 — configs</div>
+    <h2 class="section-title reveal">DOTFILE<br/>EXAMPLES</h2>
+    <p class="section-sub reveal">Reference configs to get you started. These are starting points — personalize every line.</p>
+
+    <div class="config-grid">
+      <div class="code-block reveal">
+        <div class="code-header">
+          <span class="code-filename">~/.config/bspwm/bspwmrc</span>
+          <span class="code-lang">shell</span>
+        </div>
+        <div class="code-body">
+<span class="cmt">#!/bin/sh</span>
+<span class="kw">bspc</span> monitor <span class="sym">-d</span> <span class="str">I II III IV V</span>
+
+<span class="cmt"># layout & padding</span>
+<span class="kw">bspc</span> config border_width   <span class="val">2</span>
+<span class="kw">bspc</span> config window_gap     <span class="val">12</span>
+<span class="kw">bspc</span> config top_padding    <span class="val">36</span>
+
+<span class="cmt"># colors</span>
+<span class="kw">bspc</span> config focused_border_color  <span class="str">"#7fff72"</span>
+<span class="kw">bspc</span> config normal_border_color   <span class="str">"#1e2530"</span>
+
+<span class="cmt"># autostart</span>
+<span class="kw">picom</span> --experimental-backends <span class="sym">&</span>
+<span class="kw">sxhkd</span> <span class="sym">&</span>
+<span class="kw">polybar</span> main <span class="sym">&</span>
+<span class="kw">feh</span> --bg-fill <span class="str">~/walls/current.png</span>
+        </div>
+      </div>
+
+      <div class="code-block reveal">
+        <div class="code-header">
+          <span class="code-filename">~/.config/kitty/kitty.conf</span>
+          <span class="code-lang">config</span>
+        </div>
+        <div class="code-body">
+<span class="cmt"># Font</span>
+<span class="kw">font_family</span>      <span class="str">JetBrains Mono</span>
+<span class="kw">font_size</span>        <span class="val">11.5</span>
+
+<span class="cmt"># Padding & transparency</span>
+<span class="kw">window_padding_width</span>  <span class="val">20</span>
+<span class="kw">background_opacity</span>    <span class="val">0.92</span>
+
+<span class="cmt"># Catppuccin Mocha</span>
+<span class="kw">foreground</span>  <span class="str">#cdd6f4</span>
+<span class="kw">background</span>  <span class="str">#1e1e2e</span>
+<span class="kw">color0</span>      <span class="str">#45475a</span>
+<span class="kw">color1</span>      <span class="str">#f38ba8</span>
+<span class="kw">color2</span>      <span class="str">#a6e3a1</span>
+<span class="kw">color4</span>      <span class="str">#89b4fa</span>
+
+<span class="cmt"># Misc</span>
+<span class="kw">cursor_shape</span>          <span class="str">beam</span>
+<span class="kw">enable_audio_bell</span>     <span class="val">no</span>
+        </div>
+      </div>
+
+      <div class="code-block reveal">
+        <div class="code-header">
+          <span class="code-filename">~/.config/picom/picom.conf</span>
+          <span class="code-lang">config</span>
+        </div>
+        <div class="code-body">
+<span class="cmt"># Rounding</span>
+<span class="kw">corner-radius</span> = <span class="val">8</span>;
+
+<span class="cmt"># Shadows</span>
+<span class="kw">shadow</span>         = <span class="str">true</span>;
+<span class="kw">shadow-radius</span>  = <span class="val">20</span>;
+<span class="kw">shadow-opacity</span> = <span class="val">0.5</span>;
+
+<span class="cmt"># Blur</span>
+<span class="kw">blur-method</span>   = <span class="str">"dual_kawase"</span>;
+<span class="kw">blur-strength</span> = <span class="val">6</span>;
+
+<span class="kw">blur-background-exclude</span> = [
+  <span class="str">"class_g = 'slop'"</span>
+];
+
+<span class="cmt"># Fading</span>
+<span class="kw">fading</span>       = <span class="str">true</span>;
+<span class="kw">fade-in-step</span> = <span class="val">0.03</span>;
+        </div>
+      </div>
+
+      <div class="code-block reveal">
+        <div class="code-header">
+          <span class="code-filename">~/.zshrc</span>
+          <span class="code-lang">zsh</span>
+        </div>
+        <div class="code-body">
+<span class="cmt"># Plugin manager</span>
+<span class="kw">source</span> <span class="str">~/.zsh/zap/zap.zsh</span>
+
+<span class="cmt"># Plugins</span>
+<span class="kw">plug</span> <span class="str">"zsh-users/zsh-autosuggestions"</span>
+<span class="kw">plug</span> <span class="str">"zdharma/fast-syntax-highlighting"</span>
+<span class="kw">plug</span> <span class="str">"Aloxaf/fzf-tab"</span>
+
+<span class="cmt"># Aliases</span>
+<span class="kw">alias</span> ls=<span class="str">'eza --icons --group-dirs first'</span>
+<span class="kw">alias</span> cat=<span class="str">'bat --style=plain'</span>
+<span class="kw">alias</span> vim=<span class="str">'nvim'</span>
+<span class="kw">alias</span> dots=<span class="str">'cd ~/.dotfiles'</span>
+
+<span class="cmt"># Prompt</span>
+<span class="kw">eval</span> <span class="str">"$(starship init zsh)"</span>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <div class="divider"></div>
+
+  <!-- RESOURCES -->
+  <section id="resources">
+    <div class="section-label">// 04 — resources</div>
+    <h2 class="section-title reveal">GO DEEPER</h2>
+    <p class="section-sub reveal">Communities, wikis, and dotfile repos to fuel your ricing journey.</p>
+
+    <div class="resource-list reveal">
+      <a class="resource-item" href="https://reddit.com/r/unixporn" target="_blank">
+        <div class="resource-left">
+          <span class="resource-icon">[01]</span>
+          <div>
+            <div class="resource-name">r/unixporn</div>
+            <div class="resource-url">reddit.com/r/unixporn</div>
+          </div>
+        </div>
+        <span class="resource-arrow">→</span>
+      </a>
+      <a class="resource-item" href="https://wiki.archlinux.org" target="_blank">
+        <div class="resource-left">
+          <span class="resource-icon">[02]</span>
+          <div>
+            <div class="resource-name">Arch Wiki</div>
+            <div class="resource-url">wiki.archlinux.org</div>
+          </div>
+        </div>
+        <span class="resource-arrow">→</span>
+      </a>
+      <a class="resource-item" href="https://github.com/catppuccin/catppuccin" target="_blank">
+        <div class="resource-left">
+          <span class="resource-icon">[03]</span>
+          <div>
+            <div class="resource-name">Catppuccin Theme</div>
+            <div class="resource-url">github.com/catppuccin/catppuccin</div>
+          </div>
+        </div>
+        <span class="resource-arrow">→</span>
+      </a>
+      <a class="resource-item" href="https://dotfiles.github.io" target="_blank">
+        <div class="resource-left">
+          <span class="resource-icon">[04]</span>
+          <div>
+            <div class="resource-name">GitHub Dotfiles</div>
+            <div class="resource-url">dotfiles.github.io</div>
+          </div>
+        </div>
+        <span class="resource-arrow">→</span>
+      </a>
+      <a class="resource-item" href="https://github.com/nickel-lang/nickel" target="_blank">
+        <div class="resource-left">
+          <span class="resource-icon">[05]</span>
+          <div>
+            <div class="resource-name">NixOS & Home Manager</div>
+            <div class="resource-url">nixos.org</div>
+          </div>
+        </div>
+        <span class="resource-arrow">→</span>
+      </a>
+      <a class="resource-item" href="https://github.com/folke/lazy.nvim" target="_blank">
+        <div class="resource-left">
+          <span class="resource-icon">[06]</span>
+          <div>
+            <div class="resource-name">lazy.nvim</div>
+            <div class="resource-url">github.com/folke/lazy.nvim</div>
+          </div>
+        </div>
+        <span class="resource-arrow">→</span>
+      </a>
+    </div>
+  </section>
+
+  <!-- FOOTER -->
+  <footer>
+    <div class="footer-logo">RICE</div>
+    <div class="footer-copy">made with <span>♥</span> for the linux community — 2025</div>
+  </footer>
+
+  <script>
+    // Custom cursor
+    const cursor = document.getElementById('cursor');
+    const ring = document.getElementById('cursorRing');
+    let mx = 0, my = 0, rx = 0, ry = 0;
+
+    document.addEventListener('mousemove', e => {
+      mx = e.clientX; my = e.clientY;
+      cursor.style.left = mx + 'px';
+      cursor.style.top = my + 'px';
+    });
+
+    (function animate() {
+      rx += (mx - rx) * 0.12;
+      ry += (my - ry) * 0.12;
+      ring.style.left = rx + 'px';
+      ring.style.top = ry + 'px';
+      requestAnimationFrame(animate);
+    })();
+
+    document.querySelectorAll('a, button, .step-card, .tool-cell').forEach(el => {
+      el.addEventListener('mouseenter', () => {
+        cursor.style.width = '16px';
+        cursor.style.height = '16px';
+        ring.style.width = '48px';
+        ring.style.height = '48px';
+      });
+      el.addEventListener('mouseleave', () => {
+        cursor.style.width = '10px';
+        cursor.style.height = '10px';
+        ring.style.width = '34px';
+        ring.style.height = '34px';
+      });
+    });
+
+    // Scroll reveal
+    const reveals = document.querySelectorAll('.reveal');
+    const observer = new IntersectionObserver(entries => {
+      entries.forEach((entry, i) => {
+        if (entry.isIntersecting) {
+          setTimeout(() => entry.target.classList.add('visible'), 80);
+          observer.unobserve(entry.target);
+        }
+      });
+    }, { threshold: 0.1 });
+    reveals.forEach(el => observer.observe(el));
+
+    // Stagger step cards
+    document.querySelectorAll('.step-card').forEach((el, i) => {
+      el.style.transitionDelay = (i * 0.06) + 's';
+    });
+    document.querySelectorAll('.tool-cell').forEach((el, i) => {
+      el.style.transitionDelay = (i * 0.04) + 's';
+    });
+  </script>
+</body>
+</html>
